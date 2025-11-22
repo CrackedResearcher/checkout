@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'coupons',
     'users',
     'authentication',
+    'store'
 ]
 
 MIDDLEWARE = [
