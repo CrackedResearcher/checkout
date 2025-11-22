@@ -21,3 +21,6 @@ class Coupon(models.Model):
 
     def is_valid_coupon(self):
         return not self.is_used and self.is_active
+
+    def __str__(self):
+        return self.code

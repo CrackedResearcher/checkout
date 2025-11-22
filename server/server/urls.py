@@ -21,6 +21,7 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
+from rest_framework.permissions import AllowAny
 from authentication.views import LoginOrRegisterView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
@@ -37,6 +38,9 @@ docs_patterns = [
 ]
 
 v1_patterns = [
+    # swagger docs
+    path("", include(docs_patterns)),
+    
     # auth related
     path("auth/", include(auth_patterns)),
 
@@ -47,10 +51,7 @@ v1_patterns = [
     # path('coupons/', include('coupons.urls')),
 
     # for orders app, kept empty to allow orders app to define its own prefixes like 'cart/' and 'checkout/'
-    # path("", include("orders.urls")),
-
-    # swagger docs
-    path("", include(docs_patterns)),
+    path("", include("orders.urls")),
 ]
 
 urlpatterns = [

@@ -36,7 +36,7 @@ class LoginOrRegisterView(APIView):
     @extend_schema(
         summary="Process User Login/Registration",
         description="Checks if email exists. If yes, logs in. If no, registers new user.",
-        tags=['Auth'],
+        tags=['auth'],
         request=InputSerializer,
         responses={
             200: OutputSerializer,
