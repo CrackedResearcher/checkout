@@ -47,7 +47,7 @@ class OrderItem(models.Model):
         return f"{self.product.name}({self.quantity}) ordered for {self.price_at_purchase_time}"
 
 class Cart(models.Model):
-    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cart')
+    owner = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE, related_name='cart')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

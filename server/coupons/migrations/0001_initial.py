@@ -12,13 +12,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Product',
+            name='Coupon',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(db_index=True, max_length=255)),
-                ('quantity', models.PositiveIntegerField(default=0)),
-                ('price', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('code', models.CharField(max_length=15, unique=True)),
+                ('discount_percentage', models.PositiveIntegerField(default=10)),
                 ('is_active', models.BooleanField(default=True)),
+                ('is_used', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
             ],
