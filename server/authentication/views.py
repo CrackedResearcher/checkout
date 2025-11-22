@@ -1,18 +1,56 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, serializers
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, extend_schema_serializer
 
 User = get_user_model()
 
 class LoginOrRegisterView(APIView):
-    def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
+    """this view gets/creates the user automatically
+    
+    returns:
+    - message: the action that happened
+    - user_id: the id of the user
+    - email: the email of the user
+    - tokens: the access and refresh tokens
+    """
 
-        if not email or not password:
-            return Response({"error": "Email and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema_serializer(component_name="LoginInputSerializer")
+    class InputSerializer(serializers.Serializer):
+        email = serializers.EmailField()
+        password = serializers.CharField(write_only=True)
+
+    @extend_schema_serializer(component_name="LoginResponseSerializer")
+    class OutputSerializer(serializers.Serializer):
+        message = serializers.CharField()
+        user_id = serializers.IntegerField()
+        email = serializers.EmailField()
+        tokens = serializers.DictField(
+            child=serializers.CharField(),
+            help_text="Contains 'access' and 'refresh' tokens"
+        )
+
+
+    @extend_schema(
+        summary="Process User Login/Registration",
+        description="Checks if email exists. If yes, logs in. If no, registers new user.",
+        tags=['Auth'],
+        request=InputSerializer,
+        responses={
+            200: OutputSerializer,
+            400: {"description": "Validation Error (e.g. missing fields)"},
+            401: {"description": "Invalid Credentials (Login failed)"},
+            500: {"description": "Server Error"}
+        }
+    )
+    def post(self, request):
+        input_serializer = self.InputSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+
+        email = input_serializer.validated_data['email']
+        password = input_serializer.validated_data['password']
 
         # check if user exists
         if User.objects.filter(email=email).exists():
@@ -38,8 +76,7 @@ class LoginOrRegisterView(APIView):
 
         # 2. generate tokens 
         refresh = RefreshToken.for_user(user)
-
-        return Response({
+        response_data = {
             "message": action,
             "user_id": user.id,
             "email": user.email,
@@ -47,4 +84,9 @@ class LoginOrRegisterView(APIView):
                 "access": str(refresh.access_token),
                 "refresh": str(refresh)
             }
-        }, status=status.HTTP_200_OK)
+        }
+
+        serializer = self.OutputSerializer(data=response_data)
+        serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

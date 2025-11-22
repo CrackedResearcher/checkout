@@ -15,17 +15,25 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from pydoc import doc
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from authentication.views import LoginOrRegisterView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
 auth_patterns = [
     path("login/", LoginOrRegisterView.as_view(), name="login_or_register"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+]
+
+docs_patterns = [
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    # The UI (Human readable website)
+    path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
 
 v1_patterns = [
@@ -37,6 +45,9 @@ v1_patterns = [
     # path('coupons/', include('coupons.urls')),
     # for orders app, kept empty to allow orders app to define its own prefixes like 'cart/' and 'checkout/'
     # path("", include("orders.urls"))
+
+    # swagger docs
+    path("", include(docs_patterns)),
 ]
 
 urlpatterns = [
