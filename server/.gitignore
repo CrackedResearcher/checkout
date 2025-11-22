@@ -6,6 +6,7 @@ venv/
 # Python artifacts
 __pycache__/
 *.py[cod]
+*.pyc
 
 # Env files
 *.env
@@ -28,3 +29,4 @@ build/
 .vscode/
 .idea/
 .DS_Store
+

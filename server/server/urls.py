@@ -14,34 +14,32 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
 )
+from authentication.views import LoginOrRegisterView
+
 
 auth_patterns = [
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("login/", LoginOrRegisterView.as_view(), name="login_or_register"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]
 
 v1_patterns = [
     # auth related
     path("auth/", include(auth_patterns)),
     # for product app
-    path('products/', include('products.urls')),
-
+    # path('products/', include('products.urls')),
     # for coupons app
-    path('coupons/', include('coupons.urls')),
-
+    # path('coupons/', include('coupons.urls')),
     # for orders app, kept empty to allow orders app to define its own prefixes like 'cart/' and 'checkout/'
-    path("", include("orders.urls"))
-
+    # path("", include("orders.urls"))
 ]
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
-    path('api/v1/', include(v1_patterns)),
+    path("admin/", admin.site.urls),
+    path("api/v1/", include(v1_patterns)),
 ]
