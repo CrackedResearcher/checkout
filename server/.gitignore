@@ -1,0 +1,30 @@
+// .gitignore
+# Environments
+.venv/
+venv/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+
+# Env files
+*.env
+.env
+.env.*
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+*.log
+media/
+staticfiles/
+
+# Tools/packaging
+dist/
+build/
+*.egg-info/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
