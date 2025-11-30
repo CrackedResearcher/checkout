@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import StoreStats, StoreSettings
+from .models import GlobalOrderCounter, StoreSettings
 
 
-@admin.register(StoreStats)
-class StoreStatsAdmin(admin.ModelAdmin):
-    list_display = ("id", "total_orders")
+@admin.register(GlobalOrderCounter)
+class GlobalOrderCounterAdmin(admin.ModelAdmin):
+    list_display = ("id", "current_count")
     search_fields = ("id",)
 
 @admin.register(StoreSettings)

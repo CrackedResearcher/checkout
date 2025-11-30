@@ -15,7 +15,7 @@ class OrderAdmin(admin.ModelAdmin):
         'user',
         'final_amount',
         'status',
-        'coupon_code_used',
+        'coupon_used',
         'created_at',
     )
     list_filter = ('status', 'created_at')

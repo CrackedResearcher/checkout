@@ -1,3 +1,5 @@
+from math import prod
+import os
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, serializers
@@ -10,10 +12,10 @@ from .models import Cart, CartItem, Order, OrderItem
 from products.models import Product
 from .serializers import CartItemSerializer
 from coupons.models import Coupon
-from store.models import StoreSettings, StoreStats
 from django.db import transaction
 from decimal import Decimal
-import uuid
+from store.models import GlobalOrderCounter
+import stripe
 
 
 class CartView(APIView):
@@ -27,26 +29,26 @@ class CartView(APIView):
     @extend_schema(
         summary="View My Cart",
         tags=["Cart"],
-        responses={200: CartItemSerializer(many=True)}
+        responses={200: CartItemSerializer(many=True)},
     )
     def get(self, request):
         cart, _ = Cart.objects.get_or_create(owner=request.user)
-        items = cart.items.select_related('product').all()
-        
+        items = cart.items.select_related("product").all()
+
         return Response(CartItemSerializer(items, many=True).data)
 
     @extend_schema(
         summary="Add Item to Cart",
         tags=["Cart"],
         request=InputSerializer,
-        responses={201: CartItemSerializer}
+        responses={201: CartItemSerializer},
     )
     def post(self, request):
         serializer = self.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        prod_id = serializer.validated_data['product_id']
-        qty = serializer.validated_data['quantity']
+        prod_id = serializer.validated_data["product_id"]
+        qty = serializer.validated_data["quantity"]
 
         product = get_object_or_404(Product, id=prod_id)
         cart, _ = Cart.objects.get_or_create(owner=request.user)
@@ -57,10 +59,12 @@ class CartView(APIView):
             cart_item.quantity += qty
         else:
             cart_item.quantity = qty
-        
+
         cart_item.save()
 
-        return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
+        return Response(
+            CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED
+        )
 
 
 class CartItemUpdateView(APIView):
@@ -78,31 +82,67 @@ class CartItemUpdateView(APIView):
         description="Updates the quantity of a specific line item.",
         tags=["Cart"],
         request=InputSerializer,
-        responses={200: CartItemSerializer}
+        responses={200: CartItemSerializer},
     )
     def patch(self, request, pk):
-
         serializer = self.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         new_qty = serializer.validated_data["quantity"]
 
         cart_item = self.get_item(request.user, pk)
 
-        cart_item.quantity = new_qty 
+        cart_item.quantity = new_qty
         cart_item.save()
 
         return Response(CartItemSerializer(cart_item).data)
 
     @extend_schema(
-        summary="Remove Item from Cart",
-        tags=["Cart"],
-        responses={204: None}
+        summary="Remove Item from Cart", tags=["Cart"], responses={204: None}
     )
     def delete(self, request, pk):
         cart_item = self.get_item(request.user, pk)
         cart_item.delete()
-        
+
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StripePaymentUpdateWebhookView(APIView):
+    def post(self, request):
+        payload = request.data
+        sig_header = request.headers.get("STRIPE_SIGNATURE")
+        event = None
+        endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+        print("\n\n\n\nRECEIVED WEBHOOK ==> ", payload, "\n\n\n\n")
+
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        except ValueError as e:
+            return Response(
+                {"details": "payment failed"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except stripe.error.SignatureVerificationError as e:
+            return Response(
+                {"details": "payment failed"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        event_dict = event.to_dict()
+        if event_dict["type"] == "payment_intent.succeeded":
+            _ = event_dict["data"]["object"]
+            return Response(
+                {"details": "Order placed successfully!"},
+                status=status.HTTP_201_CREATED,
+            )
+        elif event_dict["type"] == "payment_intent.payment_failed":
+            return Response(
+                {"details": "payment failed"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {"details": "Order placed successfully!"}, status=status.HTTP_201_CREATED
+        )
+
 
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -111,100 +151,117 @@ class CheckoutView(APIView):
         user = request.user
         coupon_code = request.data.get("coupon_code")
 
-        try:
-            cart = Cart.objects.get(owner=user)
-            items = cart.items.select_related('product').all()
-            if not items.exists():
-                return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
-        except Cart.DoesNotExist:
-            return Response({"error": "Cart not found"}, status=status.HTTP_404_NOT_FOUND)
+        # 1. Get Cart
+        cart = get_object_or_404(Cart, owner=user)
+        items = cart.items.select_related("product").all()
+        if not items.exists():
+            return Response({"error": "Cart is empty"}, status=400)
 
-
-        total_cost = sum(item.product.price * item.quantity for item in items)
-        discount_amount = Decimal(0)
-        coupon_obj = None
-
-        # validate coupon before placing order
-        if coupon_code:
-            try:
-                # add lock
-                coupon_obj = Coupon.objects.select_for_update().get(code=coupon_code)
-                
-                if coupon_obj.is_valid_coupon():
-                    return Response({"error": "Coupon is invalid or expired"}, status=400)
-
-                # apply discount
-                discount_amount = (coupon_obj.discount_percent / Decimal(100)) * total_cost
-            except Coupon.DoesNotExist:
-                return Response({"error": "Invalid coupon code"}, status=400)
-
-        final_amount = total_cost - discount_amount
-
+        # 2. Start Transaction (Everything from here is atomic)
         with transaction.atomic():
+            # 3. Calculate Totals
+            total_cost = sum(item.product.price * item.quantity for item in items)
+            discount_amount = Decimal(0)
+            coupon_obj = None
+
+            # 4. Validate Coupon (With Locking)
+            if coupon_code:
+                try:
+                    # Lock the coupon row so it can't be used twice concurrently
+                    coupon_obj = Coupon.objects.select_for_update().get(
+                        code=coupon_code
+                    )
+
+                    # Use the correct model method
+                    if not coupon_obj.is_valid_for_user(user):
+                        return Response(
+                            {"error": "Coupon is invalid, expired, or not yours"},
+                            status=400,
+                        )
+
+                    # Apply Discount
+                    discount_amount = (
+                        Decimal(coupon_obj.discount_percentage) / Decimal(100)
+                    ) * total_cost
+
+                except Coupon.DoesNotExist:
+                    return Response({"error": "Invalid coupon code"}, status=400)
+
+            final_amount = total_cost - discount_amount
+
+            # 5. Create Order
             order = Order.objects.create(
                 user=user,
                 total_amount=total_cost,
                 discount_amount=discount_amount,
                 final_amount=final_amount,
-                coupon_code_used=coupon_obj, 
-                status='IN_PROGRESS'
+                coupon_used=coupon_obj, 
+                status="COMPLETED",
             )
 
-            # mark coupon as used
+            # 6. Mark Coupon Used
             if coupon_obj:
                 coupon_obj.is_used = True
                 coupon_obj.save()
 
-            # create order item to save price and add a record
-            order_items = []
-            for item in items:
-                order_items.append(OrderItem(
+            # 7. Create Order Items (Bulk Create)
+            order_items = [
+                OrderItem(
                     order=order,
                     product=item.product,
                     quantity=item.quantity,
-                    price_at_purchase_time=item.product.price
-                ))
-            
+                    price_at_purchase_time=item.product.price,
+                )
+                for item in items
+            ]
             OrderItem.objects.bulk_create(order_items)
 
-            # remove the cart items from cart
-            cart.items.all().delete() 
+            # 8. Clear Cart
+            cart.items.all().delete()
 
-            stats, _ = StoreStats.objects.select_for_update().get_or_create(id=1)
-            stats.total_orders += 1
-            stats.save()
+            # 9. Increment Global Counter (The final step)
+            # We lock it, increment it, and release.
+            counter_obj, _ = (
+                GlobalOrderCounter.objects.select_for_update().get_or_create(id=1)
+            )
+            counter_obj.current_count += 1
+            counter_obj.save()
 
-            new_coupon_code = None
-            nth_order = StoreSettings.objects.get(is_active=True)
-            N = nth_order.value
+            line_items = []
 
-            if stats.total_orders % N == 0:
-                new_coupon_code = f"WINNER-{uuid.uuid4().hex[:6].upper()}"
-                Coupon.objects.create(
-                    code=new_coupon_code,
-                    discount_percent=10,
-                    generated_by_order=order 
+            for item in items:
+                price_obj = stripe.Price.create(
+                    currency="usd",
+                    unit_amount=int(item.product.price * 100),  # convert to cents
+                    product=item.product.stripe_product_id,
                 )
 
-        response_data = {
-            "message": "Order placed successfully",
-            "order_id": order.id,
-            "total_paid": final_amount,
-        }
+                line_items.append({"price": price_obj.id, "quantity": item.quantity})
 
-        if new_coupon_code:
-            response_data["new_coupon_earned"] = new_coupon_code
-            response_data["message"] += " - You won a discount code!"
+            checkout_session = stripe.checkout.Session.create(
+                line_items=line_items,
+                mode="payment",
+                success_url="http://localhost:8000/api/v1/payment/status?success=true",
+                cancel_url="http://localhost:8000/api/v1/payment/status?canceled=true",
+            )
 
-        return Response(response_data, status=status.HTTP_201_CREATED)
-
+        return Response(
+            {
+                "checkout_url": checkout_session.url,
+                "message": "Order placed successfully",
+                "order_id": order.id,
+                "total_paid": final_amount,
+                "discount_applied": discount_amount,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by('-created_at')
+        return Order.objects.filter(user=self.request.user).order_by("-created_at")
 
 
 class AdminStatsView(APIView):

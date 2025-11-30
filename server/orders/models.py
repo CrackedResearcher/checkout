@@ -5,23 +5,21 @@ from coupons.models import Coupon
 
 # Create your models here.
 class Order(models.Model):
-
     ORDER_CHOICES = [
-        ('IN_PROGRESS', 'in progress'),
-        ('SHIPPED', 'shipped'),
-        ('ON_HOLD', 'on hold'),
-        ('DELIVERED', 'delivered'),
-        ('CANCELLED', 'cancelled')
+        ('IN_PROGRESS', 'In Progress'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled')
     ]   
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-
+    
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     final_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=ORDER_CHOICES, default='IN_PROGRESS')
 
-    coupon_code_used = models.ForeignKey(
-        Coupon,
+    # Link to the coupon used to get a discount
+    coupon_used = models.ForeignKey(
+        'coupons.Coupon',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -30,10 +28,6 @@ class Order(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Order #{self.id}"
-
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')

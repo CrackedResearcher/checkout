@@ -1,9 +1,7 @@
 from django.db import models
 
-class StoreStats(models.Model):
-    # to maintain global count of orders
-    total_orders = models.PositiveIntegerField(default=0)
-
+class GlobalOrderCounter(models.Model):
+    current_count = models.PositiveIntegerField(default=0)
 
 class StoreSettings(models.Model):
     key = models.CharField(max_length=44, unique=True)

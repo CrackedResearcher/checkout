@@ -28,19 +28,26 @@ SECRET_KEY = 'django-insecure-efe&ejl54$xc3gbie((h-@4ww1-jl@pwqheb&miear9v=7h91k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost', 
+    '127.0.0.1', 
+    'marks-routine-neighborhood-pipeline.trycloudflare.com'
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:9000",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://marks-routine-neighborhood-pipeline.trycloudflare.com"
 ]
 
 CORS_ALLOW_HEADERS = (
     *default_headers,
 )
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000",
+    "https://marks-routine-neighborhood-pipeline.trycloudflare.com"
+]
 
 # Application definition
 
@@ -77,7 +84,7 @@ MIDDLEWARE = [
 ]
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=50),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
@@ -90,6 +97,20 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 14,
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
 }
 
 ROOT_URLCONF = 'server.urls'

@@ -40,7 +40,7 @@ docs_patterns = [
 v1_patterns = [
     # swagger docs
     path("", include(docs_patterns)),
-    
+
     # auth related
     path("auth/", include(auth_patterns)),
 
@@ -48,7 +48,7 @@ v1_patterns = [
     path('products/', include('products.urls')),
 
     # for coupons app
-    # path('coupons/', include('coupons.urls')),
+    path('coupons/', include('coupons.urls')),
 
     # for orders app, kept empty to allow orders app to define its own prefixes like 'cart/' and 'checkout/'
     path("", include("orders.urls")),
