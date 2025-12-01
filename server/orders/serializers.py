@@ -11,7 +11,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['cart_item_id', 'product', 'product_name', 'price', 'quantity', 'thumbnail', 'subtotal']
+        fields = ['id', 'cart_item_id', 'product', 'product_name', 'price', 'quantity', 'thumbnail', 'subtotal']
 
     def get_subtotal(self, obj):
         return obj.quantity * obj.product.price

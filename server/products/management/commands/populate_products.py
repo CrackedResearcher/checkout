@@ -1,45 +1,73 @@
-import random
+import time
+import requests
 from django.core.management.base import BaseCommand
-from products.models import Product
-from faker import Faker
+from products.models import Product 
+import stripe
 
 class Command(BaseCommand):
-    help = 'Populate the database with dummy products'
+    help = 'Populate DB with real product data from DummyJSON API'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write('Seeding data...')
-        fake = Faker()
+        self.stdout.write('Fetching data from API...')
         
-        # A list of adjectives and nouns to mix and match for product names
-        adjectives = ['Rustic', 'Sleek', 'Modern', 'Vintage', 'Ergonomic', 'Durable', 'Premium', 'Wireless', 'Portable', 'Smart']
-        nouns = ['Laptop', 'Chair', 'Headphones', 'Watch', 'Bottle', 'Keyboard', 'Shoes', 'Wallet', 'Camera', 'Table', 'Lamp', 'Backpack']
+        # 1. Fetch 100 products from the external API
+        url = "https://api.escuelajs.co/api/v1/products"
+        response = requests.get(url)
         
-        products_batch = []
+        if response.status_code != 200:
+            self.stdout.write(self.style.ERROR('Failed to fetch data from API'))
+            return
 
-        for i in range(400):
-            # 1. Generate a catchy name
-            name = f"{random.choice(adjectives)} {random.choice(nouns)} {fake.word().title()}"
+        data = response.json()
+        products_list = data['products'] # This is a list of dictionaries
+
+        self.stdout.write(f"Found {len(products_list)} products. Starting import...")
+
+        created_count = 0
+
+        for item in products_list:
+            # 2. Extract specific fields from the API data
+            name = item.get('title')
             
-            # 2. Generate random price between $10 and $1000
-            price = round(random.uniform(10.00, 1000.00), 2)
+            # Ensure description isn't too long for your DB field (max 500)
+            description = item.get('description', '')
+            if len(description) > 495:
+                description = description[:495] + "..."
+
+            price = item.get('price')
+            stock = item.get('stock', 0)
             
-            # 3. Random Quantity (Some out of stock for testing)
-            quantity = random.choices([0, random.randint(1, 50), random.randint(50, 200)], weights=[5, 45, 50])[0]
-            
-            # 4. Random Image URL (Using Lorem Picsum with a seed so image stays constant)
-            # We use the index 'i' to ensure every product gets a slightly different image
-            thumbnail_url = f"https://picsum.photos/seed/{i}/300/300"
+            # DummyJSON provides a 'thumbnail' and 'images' list. We take the thumbnail.
+            image_url = item.get('thumbnail')
 
-            product = Product(
-                name=name,
-                price=price,
-                quantity=quantity,
-                thumbnail_url=thumbnail_url,
-                is_active=True
-            )
-            products_batch.append(product)
+            # 3. Create the Product object
+            try:
+                # Check if product already exists to avoid duplicates (optional)
+                if Product.objects.filter(name=name).exists():
+                    self.stdout.write(f"Skipping {name} (Already exists)")
+                    continue
 
-        # 5. Bulk Create (One DB query instead of 400)
-        Product.objects.bulk_create(products_batch)
+                product = Product(
+                    name=name,
+                    description=description,
+                    price=price,
+                    quantity=stock,
+                    thumbnail_url=image_url,
+                    is_active=True
+                )
 
-        self.stdout.write(self.style.SUCCESS(f'Successfully created {len(products_batch)} products!'))
+                # 4. Save (Triggers your Stripe logic in models.py)
+                product.save()
+
+                self.stdout.write(self.style.SUCCESS(f'Created: {name} (${price})'))
+                created_count += 1
+                
+                # Sleep to respect Stripe API rate limits (approx 2 requests per second)
+                time.sleep(0.5)
+
+            except stripe.error.StripeError as e:
+                self.stdout.write(self.style.ERROR(f'Stripe Error for {name}: {e}'))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'DB Error for {name}: {e}'))
+
+        self.stdout.write(self.style.SUCCESS(f'Successfully imported {created_count} products!'))

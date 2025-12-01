@@ -108,41 +108,38 @@ class CartItemUpdateView(APIView):
 
 class StripePaymentUpdateWebhookView(APIView):
     def post(self, request):
-        payload = request.data
+        payload = request.body 
         sig_header = request.headers.get("STRIPE_SIGNATURE")
-        event = None
         endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-
-        print("\n\n\n\nRECEIVED WEBHOOK ==> ", payload, "\n\n\n\n")
 
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-        except ValueError as e:
-            return Response(
-                {"details": "payment failed"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        except stripe.error.SignatureVerificationError as e:
-            return Response(
-                {"details": "payment failed"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        # Handle Successful Payment
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            
+            order_id = session["metadata"].get("order_id")
+            user_id = session["metadata"].get("user_id")
 
-        event_dict = event.to_dict()
-        if event_dict["type"] == "payment_intent.succeeded":
-            _ = event_dict["data"]["object"]
-            return Response(
-                {"details": "Order placed successfully!"},
-                status=status.HTTP_201_CREATED,
-            )
-        elif event_dict["type"] == "payment_intent.payment_failed":
-            return Response(
-                {"details": "payment failed"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            try:
+                order = Order.objects.get(id=order_id)
+                
+                order.status = "PAID"
+                order.save()
 
-        return Response(
-            {"details": "Order placed successfully!"}, status=status.HTTP_201_CREATED
-        )
+                stats, _ = GlobalOrderCounter.objects.select_for_update().get_or_create(id=1)
+                stats.current_count += 1
+                stats.save()
 
+                Cart.objects.filter(owner_id=user_id).first().items.all().delete()
+                
+            except Order.DoesNotExist:
+                return Response(status=404)
+
+        return Response(status=status.HTTP_200_OK)
 
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -151,110 +148,91 @@ class CheckoutView(APIView):
         user = request.user
         coupon_code = request.data.get("coupon_code")
 
-        # 1. Get Cart
         cart = get_object_or_404(Cart, owner=user)
         items = cart.items.select_related("product").all()
         if not items.exists():
             return Response({"error": "Cart is empty"}, status=400)
 
-        # 2. Start Transaction (Everything from here is atomic)
+        # 1. Validation Logic (Coupons, etc.)
+        total_cost = sum(item.product.price * item.quantity for item in items)
+        discount_amount = Decimal(0)
+        coupon_obj = None
+
+        if coupon_code:
+            try:
+                # We LOCK the coupon here so they can't spam it in multiple tabs
+                coupon_obj = Coupon.objects.select_for_update().get(code=coupon_code)
+                if not coupon_obj.is_valid_for_user(user):
+                    return Response({"error": "Invalid Coupon"}, status=400)
+                
+                discount_amount = (Decimal(coupon_obj.discount_percentage) / 100) * total_cost
+            except Coupon.DoesNotExist:
+                return Response({"error": "Invalid Code"}, status=400)
+
+        final_amount = total_cost - discount_amount
+
+        MAX_USD_LIMIT = Decimal(25000.00) 
+        
+        if final_amount > MAX_USD_LIMIT:
+            return Response(
+                {
+                    "error": "Transaction limit exceeded.",
+                    "detail": f"Due to regulatory limits, we cannot process orders above ${MAX_USD_LIMIT} in a single transaction."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. Create Order with PENDING status
+        # We do NOT clear the cart yet.
         with transaction.atomic():
-            # 3. Calculate Totals
-            total_cost = sum(item.product.price * item.quantity for item in items)
-            discount_amount = Decimal(0)
-            coupon_obj = None
-
-            # 4. Validate Coupon (With Locking)
-            if coupon_code:
-                try:
-                    # Lock the coupon row so it can't be used twice concurrently
-                    coupon_obj = Coupon.objects.select_for_update().get(
-                        code=coupon_code
-                    )
-
-                    # Use the correct model method
-                    if not coupon_obj.is_valid_for_user(user):
-                        return Response(
-                            {"error": "Coupon is invalid, expired, or not yours"},
-                            status=400,
-                        )
-
-                    # Apply Discount
-                    discount_amount = (
-                        Decimal(coupon_obj.discount_percentage) / Decimal(100)
-                    ) * total_cost
-
-                except Coupon.DoesNotExist:
-                    return Response({"error": "Invalid coupon code"}, status=400)
-
-            final_amount = total_cost - discount_amount
-
-            # 5. Create Order
             order = Order.objects.create(
                 user=user,
                 total_amount=total_cost,
                 discount_amount=discount_amount,
                 final_amount=final_amount,
                 coupon_used=coupon_obj, 
-                status="COMPLETED",
+                status="PENDING", # Wait for webhook
             )
 
-            # 6. Mark Coupon Used
-            if coupon_obj:
-                coupon_obj.is_used = True
-                coupon_obj.save()
-
-            # 7. Create Order Items (Bulk Create)
+            # Create OrderItems (Snapshot of prices)
             order_items = [
                 OrderItem(
                     order=order,
                     product=item.product,
                     quantity=item.quantity,
                     price_at_purchase_time=item.product.price,
-                )
-                for item in items
+                ) for item in items
             ]
             OrderItem.objects.bulk_create(order_items)
 
-            # 8. Clear Cart
-            cart.items.all().delete()
-
-            # 9. Increment Global Counter (The final step)
-            # We lock it, increment it, and release.
-            counter_obj, _ = (
-                GlobalOrderCounter.objects.select_for_update().get_or_create(id=1)
-            )
-            counter_obj.current_count += 1
-            counter_obj.save()
+            if coupon_obj:
+                coupon_obj.is_used = True
+                coupon_obj.save()
 
             line_items = []
-
             for item in items:
-                price_obj = stripe.Price.create(
-                    currency="usd",
-                    unit_amount=int(item.product.price * 100),  # convert to cents
-                    product=item.product.stripe_product_id,
-                )
-
-                line_items.append({"price": price_obj.id, "quantity": item.quantity})
+                line_items.append({
+                    'price_data': {
+                        'currency': 'usd',
+                        'product': item.product.stripe_product_id,
+                        'unit_amount': int(item.product.price * 100),
+                    },
+                    'quantity': item.quantity,
+                })
 
             checkout_session = stripe.checkout.Session.create(
                 line_items=line_items,
                 mode="payment",
-                success_url="http://localhost:8000/api/v1/payment/status?success=true",
-                cancel_url="http://localhost:8000/api/v1/payment/status?canceled=true",
+                customer_email=user.email,
+                success_url="http://localhost:3000/payment-success",
+                cancel_url="http://localhost:3000/payment-failed",
+                metadata={
+                    "order_id": order.id,
+                    "user_id": user.id
+                }
             )
 
-        return Response(
-            {
-                "checkout_url": checkout_session.url,
-                "message": "Order placed successfully",
-                "order_id": order.id,
-                "total_paid": final_amount,
-                "discount_applied": discount_amount,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({"checkout_url": checkout_session.url})
 
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):

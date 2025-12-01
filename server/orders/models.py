@@ -6,16 +6,20 @@ from coupons.models import Coupon
 # Create your models here.
 class Order(models.Model):
     ORDER_CHOICES = [
-        ('IN_PROGRESS', 'In Progress'),
-        ('COMPLETED', 'Completed'),
-        ('CANCELLED', 'Cancelled')
+        ('PENDING', 'Pending Payment'),
+        ('PAYMENT_FAILED', 'Payment Failed'),
+        ('PAID', 'Paid / Processing'),
+        ('SHIPPED', 'Shipped'),
+        ('DELIVERED', 'Delivered'),
+        ('CANCELLED', 'Cancelled'),
+        ('REFUNDED', 'Refunded'),
     ]   
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     final_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=ORDER_CHOICES, default='IN_PROGRESS')
+    status = models.CharField(max_length=20, choices=ORDER_CHOICES, default='PENDING')
 
     # Link to the coupon used to get a discount
     coupon_used = models.ForeignKey(
