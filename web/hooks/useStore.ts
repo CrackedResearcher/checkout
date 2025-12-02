@@ -1,27 +1,47 @@
 // hooks/useStore.ts
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Product, CartItem, CouponResponse } from '@/types';
+import { Product, CartItem, CouponResponse, Order } from '@/types';
 import { toast } from 'sonner'; 
 import { useAuth } from '@/providers/Providers';
 
 // Fetch Products
 export const useProducts = () => {
-    return useInfiniteQuery({
-      queryKey: ['products'],
-      initialPageParam: 1,
-      queryFn: async ({ pageParam = 1 }) => {
-        // Pass the page number to Django
-        const { data } = await api.get(`/products/?page=${pageParam}`);
-        return data;
-      },
-      getNextPageParam: (lastPage, allPages) => {
-        // Django returns "next": "http://.../?page=2" or null
-        // If "next" exists, we increment the page number
-        return lastPage.next ? allPages.length + 1 : undefined;
-      },
-    });
-  };
+  return useInfiniteQuery({
+    queryKey: ['products'],
+    // 1. Start with offset 0
+    initialPageParam: 0,
+    
+    queryFn: async ({ pageParam = 0 }) => {
+      // 2. Pass limit and offset to Django
+      // Note: Make sure 'limit' matches what your backend expects (14 in your example)
+      const { data } = await api.get(`/products/`, {
+        params: {
+          limit: 14, 
+          offset: pageParam, 
+        },
+      });
+      return data;
+    },
+
+    getNextPageParam: (lastPage) => {
+      // 3. Handle the "next" logic based on the URL Django sent back
+      if (!lastPage.next) return undefined;
+
+      // lastPage.next looks like: "http://.../?limit=14&offset=14&page=3"
+      try {
+        // Parse the URL to get the 'offset' parameter
+        const url = new URL(lastPage.next);
+        const nextOffset = url.searchParams.get("offset");
+        
+        // Return the offset if it exists, otherwise undefined stops the infinite scroll
+        return nextOffset ? Number(nextOffset) : undefined;
+      } catch (e) {
+        return undefined;
+      }
+    },
+  });
+};
   
 
 // Fetch Cart
@@ -98,5 +118,23 @@ export const useCheckout = () => {
     onError: (err: any) => {
       toast.error(err.response?.data?.error || 'Checkout failed');
     },
+  });
+};
+
+
+export const useOrders = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['orders'],
+    queryFn: async () => {
+      const { data } = await api.get('/orders/');
+    
+      if (data.results) {
+        return data.results as Order[];
+      }
+      
+      return (Array.isArray(data) ? data : []) as Order[];
+    },
+    enabled: !!user,
   });
 };

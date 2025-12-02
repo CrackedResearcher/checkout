@@ -1,9 +1,10 @@
 from django.db import models
+from common.models import BaseModel
 
-class GlobalOrderCounter(models.Model):
+class GlobalOrderCounter(BaseModel):
     current_count = models.PositiveIntegerField(default=0)
 
-class StoreSettings(models.Model):
+class StoreSettings(BaseModel):
     key = models.CharField(max_length=44, unique=True)
     value = models.IntegerField(default=5)
 

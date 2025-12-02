@@ -2,9 +2,10 @@ from django.db import models
 from django.conf import settings
 from products.models import Product
 from coupons.models import Coupon
+from common.models import BaseModel
 
 # Create your models here.
-class Order(models.Model):
+class Order(BaseModel):
     ORDER_CHOICES = [
         ('PENDING', 'Pending Payment'),
         ('PAYMENT_FAILED', 'Payment Failed'),
@@ -33,7 +34,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class OrderItem(models.Model):
+class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
@@ -44,7 +45,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.product.name}({self.quantity}) ordered for {self.price_at_purchase_time}"
 
-class Cart(models.Model):
+class Cart(BaseModel):
     owner = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE, related_name='cart')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -52,7 +53,7 @@ class Cart(models.Model):
     def __str__(self):
         return f"Cart for {self.owner.email}"
 
-class CartItem(models.Model):
+class CartItem(BaseModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)

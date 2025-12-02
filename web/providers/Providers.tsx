@@ -48,7 +48,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
-  if (!mounted) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -56,7 +55,23 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <AuthContext.Provider value={{ user, login, logout, isLoading }}>
           {children}
           {/* The new Toast UI */}
-          <Toaster position="bottom-right" richColors closeButton theme="system" />
+          <Toaster 
+          position="top-center"
+          theme="system"
+          className="toaster group"
+          toastOptions={{
+            classNames: {
+              toast: 'group toast group-[.toaster]:bg-white group-[.toaster]:dark:bg-zinc-950 group-[.toaster]:border-zinc-200 group-[.toaster]:dark:border-zinc-800 group-[.toaster]:shadow-lg group-[.toaster]:rounded-xl',
+              description: 'group-[.toast]:text-zinc-500 group-[.toast]:dark:text-zinc-400',
+              actionButton: 'group-[.toast]:bg-zinc-900 group-[.toast]:dark:bg-zinc-50 group-[.toast]:text-white group-[.toast]:dark:text-zinc-900',
+              cancelButton: 'group-[.toast]:bg-zinc-100 group-[.toast]:dark:bg-zinc-800 group-[.toast]:text-zinc-500 group-[.toast]:dark:text-zinc-400',
+              error: 'group-[.toaster]:text-red-600 dark:group-[.toaster]:text-red-400',
+              success: 'group-[.toaster]:text-indigo-600 dark:group-[.toaster]:text-indigo-400',
+              warning: 'group-[.toaster]:text-amber-600 dark:group-[.toaster]:text-amber-400',
+              info: 'group-[.toaster]:text-blue-600 dark:group-[.toaster]:text-blue-400',
+            },
+          }}
+        />
         </AuthContext.Provider>
       </ThemeProvider>
     </QueryClientProvider>

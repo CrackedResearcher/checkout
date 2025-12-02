@@ -2,8 +2,9 @@ from email.policy import default
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from common.models import BaseModel
 
-class Coupon(models.Model):
+class Coupon(BaseModel):
     code = models.CharField(max_length=15, unique=True)
     discount_percentage = models.PositiveIntegerField(default=10)
 

@@ -1,12 +1,13 @@
 from django.db import models
 import logging
+from common.models import BaseModel
 import stripe
 import os
 
 stripe.api_key = os.getenv("STRIPE_API_KEY")
 
 
-class Product(models.Model):
+class Product(BaseModel):
     name = models.CharField(max_length=255, db_index=True)
     description = models.CharField(max_length=500, default="")
     quantity = models.PositiveIntegerField(default=0)

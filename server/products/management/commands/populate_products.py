@@ -1,73 +1,76 @@
-import time
 import requests
 from django.core.management.base import BaseCommand
-from products.models import Product 
-import stripe
+from products.models import Product  
+import time
 
 class Command(BaseCommand):
-    help = 'Populate DB with real product data from DummyJSON API'
+    help = 'Seeds database with real cosmetic products (Maybelline, etc.)'
 
-    def handle(self, *args, **kwargs):
-        self.stdout.write('Fetching data from API...')
+    def add_arguments(self, parser):
+        parser.add_argument('limit', type=int, nargs='?', default=250, help='Number of products to create')
+
+    def handle(self, *args, **options):
+        limit = options['limit']
+        url = "http://makeup-api.herokuapp.com/api/v1/products.json"
+
+        self.stdout.write("Fetching real brand data...")
         
-        # 1. Fetch 100 products from the external API
-        url = "https://api.escuelajs.co/api/v1/products"
-        response = requests.get(url)
-        
-        if response.status_code != 200:
-            self.stdout.write(self.style.ERROR('Failed to fetch data from API'))
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            all_products = response.json()
+            self.stdout.write(f"API returned {len(all_products)} total items. Filtering top {limit}...")
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"API Error: {e}"))
             return
 
-        data = response.json()
-        products_list = data['products'] # This is a list of dictionaries
-
-        self.stdout.write(f"Found {len(products_list)} products. Starting import...")
-
-        created_count = 0
-
-        for item in products_list:
-            # 2. Extract specific fields from the API data
-            name = item.get('title')
+        count = 0
+        for item in all_products:
+            if count >= limit:
+                break
             
-            # Ensure description isn't too long for your DB field (max 500)
-            description = item.get('description', '')
-            if len(description) > 495:
-                description = description[:495] + "..."
+            # This API has real data, but some fields might be empty or too long
+            name = item.get('name', 'Unknown Product')
+            brand = item.get('brand')
+            
+            # Combine brand + name for a better title, e.g., "Maybelline - Lipstick"
+            if brand:
+                full_name = f"{brand.title()} - {name}"
+            else:
+                full_name = name
 
+            # Clean up price (sometimes it's "0.0" or null in this API)
             price = item.get('price')
-            stock = item.get('stock', 0)
+            if not price or float(price) == 0:
+                price = "19.99" # Fallback price
             
-            # DummyJSON provides a 'thumbnail' and 'images' list. We take the thumbnail.
-            image_url = item.get('thumbnail')
+            image = item.get('image_link')
+            description = item.get('description') or ""
+            # Strip HTML tags if description contains them
+            description = description.replace('<p>', '').replace('</p>', '').replace('<br>', '\n')[:500]
 
-            # 3. Create the Product object
+            if Product.objects.filter(name=full_name).exists():
+                continue
+
             try:
-                # Check if product already exists to avoid duplicates (optional)
-                if Product.objects.filter(name=name).exists():
-                    self.stdout.write(f"Skipping {name} (Already exists)")
-                    continue
-
-                product = Product(
-                    name=name,
+                p = Product(
+                    name=full_name,
                     description=description,
+                    quantity=100,
                     price=price,
-                    quantity=stock,
-                    thumbnail_url=image_url,
+                    thumbnail_url=image,
                     is_active=True
                 )
-
-                # 4. Save (Triggers your Stripe logic in models.py)
-                product.save()
-
-                self.stdout.write(self.style.SUCCESS(f'Created: {name} (${price})'))
-                created_count += 1
+                p.save() # Triggers Stripe
                 
-                # Sleep to respect Stripe API rate limits (approx 2 requests per second)
-                time.sleep(0.5)
+                count += 1
+                self.stdout.write(self.style.SUCCESS(f"[{count}/{limit}] Created: {p.name}"))
+                
+                # Sleep to be safe with Stripe API limits
+                if count % 20 == 0:
+                    time.sleep(1)
 
-            except stripe.error.StripeError as e:
-                self.stdout.write(self.style.ERROR(f'Stripe Error for {name}: {e}'))
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'DB Error for {name}: {e}'))
+                self.stdout.write(self.style.WARNING(f"Skipped {full_name}: {e}"))
 
-        self.stdout.write(self.style.SUCCESS(f'Successfully imported {created_count} products!'))
+        self.stdout.write(self.style.SUCCESS(f"Successfully seeded {count} real products."))

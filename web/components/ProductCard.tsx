@@ -28,7 +28,7 @@ export default function ProductCard({ product }: { product: Product }) {
             e.preventDefault();
             addToCart.mutate({ product_id: product.id, quantity: 1 });
           }}
-          className="absolute bottom-4 right-4 bg-white dark:bg-zinc-800 text-black dark:text-white p-3 rounded-full shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+          className="absolute bottom-4 right-4 bg-white dark:bg-zinc-800 text-black dark:text-white p-3 rounded-full shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:cursor-pointer"
         >
           <Plus className="w-5 h-5" />
         </button>
@@ -36,15 +36,17 @@ export default function ProductCard({ product }: { product: Product }) {
 
       {/* Product Info */}
       <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight truncate">
             {product.name}
           </h3>
+
           <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-1">
             {product.description}
           </p>
         </div>
-        <p className="text-base font-bold text-zinc-900 dark:text-white">
+
+        <p className="text-base font-bold text-zinc-900 dark:text-white pl-3 shrink-0">
           ${product.price}
         </p>
       </div>

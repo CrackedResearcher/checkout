@@ -10,7 +10,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_serializer
 
 from .models import Cart, CartItem, Order, OrderItem
 from products.models import Product
-from .serializers import CartItemSerializer
+from .serializers import CartItemSerializer, OrderSerializer 
 from coupons.models import Coupon
 from django.db import transaction
 from decimal import Decimal
@@ -224,8 +224,8 @@ class CheckoutView(APIView):
                 line_items=line_items,
                 mode="payment",
                 customer_email=user.email,
-                success_url="http://localhost:3000/payment-success",
-                cancel_url="http://localhost:3000/payment-failed",
+                success_url=f"http://localhost:3000/payment-success?order_id={order.id}",
+                cancel_url=f"http://localhost:3000/payment-failed?order_id={order.id}",
                 metadata={
                     "order_id": order.id,
                     "user_id": user.id
@@ -237,6 +237,7 @@ class CheckoutView(APIView):
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
+    serializer_class = OrderSerializer 
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).order_by("-created_at")

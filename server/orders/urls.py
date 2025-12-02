@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import CartView, CartItemUpdateView, CheckoutView, OrderViewSet, AdminStatsView, AdminCouponCreateView, StripePaymentUpdateWebhookView
 
 router = DefaultRouter()
-router.register(r'', OrderViewSet, basename='orders')
+router.register(r'orders', OrderViewSet, basename='orders')
 
 urlpatterns = [
 
