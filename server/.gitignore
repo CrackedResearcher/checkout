@@ -11,7 +11,7 @@ __pycache__/
 # Env files
 *.env
 .env
-.env.*
+
 
 # Django
 db.sqlite3-journal
