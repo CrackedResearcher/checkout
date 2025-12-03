@@ -208,6 +208,8 @@ docker-compose up --build
 
 Open http://localhost:3000 - **Done!** The store is ready with a variety of luxurious products to browse.
 
+NOTE: if you want to see checkout with stripe in action then stripe test api key is needed. You will have to generate one and put it in the server/.env file.
+
 ---
 
 ### Local Development
