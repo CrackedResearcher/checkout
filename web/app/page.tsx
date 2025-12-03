@@ -1,10 +1,11 @@
 'use client';
+
+import { useEffect, useRef, useState, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import ProductCard from '@/components/ProductCard';
 import { useProducts } from '@/hooks/useStore';
-import { useInView } from 'react-intersection-observer'; // <--- Import this
-import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 export default function Home() {
   const { 
@@ -15,18 +16,55 @@ export default function Home() {
     isFetchingNextPage 
   } = useProducts();
 
-  // The "ref" is the sensor. "inView" is true when sensor is on screen.
-  const { ref, inView } = useInView();
+  const products = useMemo(() => 
+    data?.pages.flatMap((page) => page.results) || [], 
+  [data]);
 
-  // Trigger fetch when user scrolls to bottom
+  const [columns, setColumns] = useState(1);
   useEffect(() => {
-    if (inView && hasNextPage) {
+    const updateColumns = () => {
+      const width = window.innerWidth;
+      if (width >= 1024) setColumns(4);      
+      else if (width >= 640) setColumns(2);  
+      else setColumns(1);                    
+    };
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, []);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const [offsetTop, setOffsetTop] = useState(0);
+
+  useEffect(() => {
+    if (listRef.current) {
+      setOffsetTop(listRef.current.offsetTop);
+    }
+  }, [listRef.current]);
+
+  const totalRows = Math.ceil(products.length / columns);
+
+  const virtualizer = useWindowVirtualizer({
+    count: totalRows,
+    estimateSize: () => 450, 
+    overscan: 2,
+    scrollMargin: offsetTop, 
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  useEffect(() => {
+    const [lastItem] = [...virtualItems].reverse();
+    if (!lastItem) return;
+
+    if (
+      lastItem.index >= totalRows - 1 &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
       fetchNextPage();
     }
-  }, [inView, hasNextPage, fetchNextPage]);
-
-  // Flatten the pages: [[products_page_1], [products_page_2]] -> [all_products]
-  const products = data?.pages.flatMap((page) => page.results) || [];
+  }, [hasNextPage, fetchNextPage, totalRows, isFetchingNextPage, virtualItems]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-300">
@@ -45,34 +83,64 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-8">
+        {/* Product Grid Area */}
+        <div ref={listRef}>
           {isLoading ? (
-             // Initial Loading Skeletons
-             [...Array(8)].map((_, i) => (
+            // Skeleton Loader
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-8">
+              {[...Array(8)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-zinc-200 dark:bg-zinc-800 aspect-[4/5] rounded-xl mb-4"></div>
                   <div className="h-4 bg-zinc-200 dark:bg-zinc-800 w-3/4 rounded mb-2"></div>
                 </div>
-             ))
+              ))}
+            </div>
           ) : (
-            products.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
-            ))
+            // Virtualized Container
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualItems.map((virtualRow) => {
+                const startIndex = virtualRow.index * columns;
+                const rowProducts = products.slice(startIndex, startIndex + columns);
+
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+                    }}
+                    className="pb-12" 
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8">
+                      {rowProducts.map((product: any) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* Infinite Scroll Sensor & Loader */}
-        <div ref={ref} className="mt-16 flex justify-center w-full">
+        {/* Loader State */}
+        <div className="mt-8 flex justify-center w-full h-10">
           {isFetchingNextPage && (
             <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
               <Loader2 className="w-6 h-6 animate-spin" />
               <span className="text-sm font-medium">Loading more products...</span>
             </div>
-          )}
-          
-          {!hasNextPage && products.length > 0 && (
-            <p className="text-zinc-400 text-sm">You've reached the end.</p>
           )}
         </div>
       </main>
