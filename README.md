@@ -1,6 +1,6 @@
-# E-Commerce Platform
+# FluxStore E-Commerce Platform
 
-A modern, full-stack e-commerce application for cosmetic products featuring Stripe payment integration, intelligent coupon system, and a beautiful, responsive user interface.
+A modern, full stack e-commerce store featuring a variety of luxurious products. Built with Stripe payment integration, intelligent coupon system, and a beautiful, responsive user interface.
 
 <img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 29 10 AM" src="https://github.com/user-attachments/assets/063318b9-e089-4da2-955b-b7529013c73c" />
 
@@ -12,7 +12,7 @@ cd checkout
 docker-compose up --build
 ```
 
-Open **http://localhost:3000** and start shopping! The database is pre-populated with sample products.
+Open **http://localhost:3000** to explore the store! The database comes pre-populated with a variety of luxurious products ready to browse.
 
 ## Table of Contents
 
@@ -35,62 +35,63 @@ Open **http://localhost:3000** and start shopping! The database is pre-populated
 
 ## Overview
 
-This is a production-ready e-commerce platform built with Django REST Framework and Next.js. The application features real-time product browsing, secure payment processing through Stripe, and a unique "Nth customer" promotional system that rewards customers with discount coupons.
+This is a production-ready e-commerce store showcasing a curated collection of luxurious products. Built with Django REST Framework and Next.js, the platform allows you to browse products, manage a shopping cart, and complete secure purchases through Stripe. It also features a unique "Nth customer" promotional system that rewards lucky shoppers with discount coupons.
 
-### Key Highlights
+### What You'll Find
 
-- **Seamless Authentication**: Email-based login with automatic user registration
-- **Smart Cart Management**: Real-time cart updates with quantity controls
-- **Stripe Integration**: Secure payment processing with webhook confirmation
-- **Promotional System**: Automated coupon generation for every Nth customer
+- **Variety of Luxurious Products**: Browse a curated collection of premium items
+- **Seamless Authentication**: Email-based login with automatic registration
+- **Shopping Cart**: Real-time cart updates with quantity controls
+- **Secure Payments**: Stripe integration with webhook confirmation
+- **Promotional System**: "Try Your Luck" feature - every Nth customer gets a discount coupon
 - **Modern UI/UX**: Responsive design with light/dark theme support
-- **Performance Optimized**: Virtual scrolling for large product catalogs
-- **Token Management**: Automatic JWT token refresh for uninterrupted sessions
+- **High Performance**: Virtual scrolling optimized for large product catalogs
+- **Smooth Experience**: Automatic JWT token refresh for uninterrupted browsing
 
 ## Features
 
-### Customer Features
+### What You Can Do
 
-- **Product Catalog**
+- **Browse Products**
 
-  - Browse cosmetic products with high-quality images
-  - Virtualized scrolling for optimal performance with large datasets
+  - Explore a variety of luxurious products with high-quality images
+  - Virtualized scrolling for smooth browsing of large catalogs
   - Real-time pagination and infinite scroll
 - **Shopping Cart**
 
   - Add/remove products with quantity controls
   - Real-time subtotal calculations
-  - Persistent cart across sessions
+  - Your cart persists across sessions
 - **Checkout & Payments**
 
   - Secure Stripe checkout integration
-  - Support for discount coupons
-  - Order confirmation with detailed receipts
-  - Webhook-based payment verification
-- **Coupon System**
+  - Apply discount coupons for savings
+  - Receive order confirmation with detailed receipts
+  - Webhook-based payment verification ensures reliability
+- **Try Your Luck - Coupon System**
 
-  - "Try Your Luck" feature for Nth customer promotions
-  - 10% discount for lucky customers
-  - Automatic coupon application
-  - Race-condition-safe coupon allocation
-- **Order Management**
+  - Click "Try Your Luck" to see if you're the Nth customer
+  - Lucky customers get an instant 10% discount coupon
+  - Coupons are automatically applied to your cart
+  - Race-condition-safe implementation ensures fairness
+- **Order History**
 
-  - View complete order history
+  - View your complete order history
   - Track order status (Pending, Paid, Shipped, Delivered)
-  - Order details with itemized pricing
+  - See itemized pricing for each order
 - **User Experience**
 
-  - Light/dark theme toggle
-  - Toast notifications for user actions
-  - Responsive design for all devices
+  - Toggle between light and dark themes
+  - Toast notifications keep you informed
+  - Fully responsive - works on desktop, tablet, and mobile
   - Smooth animations and transitions
 
-### Admin Features
+### Admin Capabilities
 
-- Product management (CRUD operations)
+- Manage products (Create, Read, Update, Delete)
 - Automatic Stripe product synchronization
-- Order tracking and status updates
-- Coupon generation and management
+- Track orders and update statuses
+- Generate and manage coupon codes
 
 ## Tech Stack
 
@@ -126,8 +127,7 @@ This is a production-ready e-commerce platform built with Django REST Framework 
 
 ### Database
 
-- **SQLite3** (Development) - File-based database at `server/db.sqlite3`
-- **PostgreSQL** (Production ready) - Can be configured in settings
+- **SQLite3** (Development) - File based database at `server/db.sqlite3`
 
 ## Architecture
 
@@ -180,7 +180,6 @@ Image Reference
 <img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 30 51 AM" src="https://github.com/user-attachments/assets/0893ac7f-f6b2-449a-b103-79c9406bb1fe" />
 <img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 30 45 AM" src="https://github.com/user-attachments/assets/815952dc-4c3f-4659-a3ed-395e3354dc4a" />
 
-
 ## Prerequisites
 
 ### For Local Development
@@ -207,7 +206,7 @@ cd checkout
 docker-compose up --build
 ```
 
-Open http://localhost:3000 - **Done!** The app is ready with sample data.
+Open http://localhost:3000 - **Done!** The store is ready with a variety of luxurious products to browse.
 
 ---
 
@@ -252,21 +251,21 @@ cp .env.example .env
 nano .env  # or use your preferred editor
 ```
 
-**Note**: This project uses **uv** for faster and more reliable Python dependency management. Traditional pip can also work but uv is recommended.
+**Note**: This project uses **uv** for faster and more reliable Python dependency management. You can also use traditional pip, but uv is recommended for the best experience.
 
 #### 3. Database Setup
 
 ```bash
-# Run migrations
+# Run migrations to create database tables
 python manage.py migrate
 
-# Create superuser (optional, for admin access)
-python manage.py createsuperuser
-
-# Seed database with sample products
+# Seed database with products (100 luxurious items from the Makeup API)
 python manage.py populate_products 100
 
-# Set up Nth customer promotion (optional)
+# (Optional) Create superuser for admin access
+python manage.py createsuperuser
+
+# (Optional) Set up Nth customer promotion
 python manage.py shell
 >>> from store.models import StoreSettings
 >>> StoreSettings.objects.create(key="nth_order", value=5)  # Every 5th customer gets coupon
@@ -323,14 +322,16 @@ stripe listen --forward-to localhost:8000/api/v1/stripe/webhook
 
 #### 7. Access the Application
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000/api/v1
-- **API Docs**: http://localhost:8000/api/v1/docs/
-- **Django Admin**: http://localhost:8000/admin/
+Open these URLs in your browser:
+
+- **Store Frontend**: http://localhost:3000 (Browse and shop)
+- **Backend API**: http://localhost:8000/api/v1 (API endpoints)
+- **API Documentation**: http://localhost:8000/api/v1/docs/ (Interactive Swagger UI)
+- **Django Admin**: http://localhost:8000/admin/ (Admin panel - requires superuser)
 
 ### Docker Deployment
 
-Docker setup is configured for **development mode** with hot-reloading enabled for both frontend and backend.
+Docker setup is configured for **development mode** with hot reloading enabled for both frontend and backend.
 
 **Quick Start (Recommended):**
 
@@ -344,11 +345,12 @@ docker-compose up --build
 ```
 
 **Access the application:**
+
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000/api/v1
 - **API Docs**: http://localhost:8000/api/v1/docs/
 
-The database is **already included** with sample products, so you can start using the app immediately!
+The database is **already included** with a variety of luxurious products, so you can start exploring the store immediately!
 
 ---
 
@@ -366,6 +368,7 @@ nano server/.env
 ```
 
 Then restart:
+
 ```bash
 docker-compose down
 docker-compose up --build
@@ -394,6 +397,7 @@ docker-compose down -v
 ```
 
 **Note**: The Docker setup includes:
+
 - **Frontend**: Runs `npm run dev` with hot-reload (code changes reflect immediately)
 - **Backend**: Runs Django development server with auto-reload
 - **Volumes**: Your local code is mounted, so changes are reflected without rebuilding
@@ -426,30 +430,31 @@ docker-compose exec backend python manage.py createsuperuser
 
 ### Backend (`server/.env`)
 
+Only Stripe keys are needed to run the application:
+
 ```env
-# Stripe Configuration (REQUIRED)
+# Stripe Configuration (REQUIRED for payment testing)
 STRIPE_API_KEY=sk_test_your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
 
-**Note**: Other Django settings (SECRET_KEY, DEBUG, ALLOWED_HOSTS, CORS, etc.) are already configured in `server/settings.py` and don't need environment variables for local development.
+**Note**: All other settings (SECRET_KEY, DEBUG, ALLOWED_HOSTS, CORS, etc.) are already configured in `server/settings.py` - you don't need to set them for local development or testing.
 
 ### Frontend (`web/.env.local`)
 
 ```env
 # API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-
-# Stripe Public Key (optional, for future frontend integration)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_public_key
 ```
 
-### Getting Stripe Keys
+### Getting Stripe Keys (Optional)
+
+The app works without Stripe keys, but if you want to test the full payment flow:
 
 1. Sign up at [Stripe Dashboard](https://dashboard.stripe.com/register)
 2. Navigate to **Developers → API Keys**
-3. Copy your **Secret key** (sk_test_...) and **Publishable key** (pk_test_...)
-4. For webhooks: Use Stripe CLI for local development or create webhook endpoint in dashboard for production
+3. Copy your **Secret key** (sk_test_...)
+4. For webhooks: Run `stripe listen --forward-to localhost:8000/api/v1/stripe/webhook` using Stripe CLI
 
 ## Database Setup
 
@@ -483,24 +488,10 @@ python manage.py populate_products 250
 python manage.py populate_general 100
 
 # Seed from JSON file (if you have one)
-python manage.py seed_from_json path/to/products.json
+python manage.py seed_from_json path/to/product_list.json (this is included in products/management folder - has list of scraped products from amazon)
 ```
 
-### Database Management
-
-```bash
-# Create new migration after model changes
-python manage.py makemigrations
-
-# View SQL for migration
-python manage.py sqlmigrate app_name migration_number
-
-# Reset database (WARNING: deletes all data)
-rm server/db.sqlite3
-python manage.py migrate
-```
-
-## API Documentation
+### API Documentation
 
 ### Authentication Endpoints
 
@@ -555,86 +546,86 @@ Access the interactive Swagger UI documentation:
 - **Swagger UI**: http://localhost:8000/api/v1/docs/
 - **OpenAPI Schema**: http://localhost:8000/api/v1/schema/
 
-## User Flows
+## How It Works - User Flows
 
-### 1. User Registration & Login Flow
+### 1. Registration & Login
 
 ```
-1. User visits site → Clicks "Login"
-2. Enters email and password
+1. You visit the store → Click "Login"
+2. Enter your email and password
 3. Backend checks if email exists:
    - EXISTS → Validates password → Returns JWT tokens
-   - NOT EXISTS → Creates new user → Returns JWT tokens
-4. Frontend stores tokens in localStorage
-5. User is redirected to products page
+   - NOT EXISTS → Creates account automatically → Returns JWT tokens
+4. Tokens saved in localStorage
+5. You're redirected to the products page
 ```
 
-### 2. Product Browsing Flow
+### 2. Browsing Products
 
 ```
-1. User lands on homepage
+1. You land on the homepage
 2. Products load with virtualized scrolling
-3. User scrolls down → More products load automatically
-4. Click on product → View details
+3. Scroll down → More products load automatically
+4. Click any product → View details
 5. Click "Add to Cart" → Item added with toast notification
 ```
 
-### 3. Shopping Cart Flow
+### 3. Shopping Cart
 
 ```
-1. User navigates to Cart page
-2. View all cart items with subtotals
-3. Options:
+1. Navigate to Cart page
+2. See all your cart items with subtotals
+3. You can:
    - Update quantity (+ / - buttons)
    - Remove items (trash icon)
-   - Try luck for coupon
-   - Apply manual coupon code
-4. View total with applied discounts
+   - Click "Try Your Luck" for a coupon
+   - Manually enter a coupon code
+4. See total with applied discounts
 5. Click "Checkout" → Proceed to payment
 ```
 
-### 4. Coupon Generation Flow
+### 4. Try Your Luck - Coupon System
 
 ```
-1. User clicks "Try Your Luck" button
-2. Backend calculates: (current_orders + 1) % N
-3. If eligible (result === 0):
-   - Generate unique coupon code
-   - Reserve for user with 10-minute expiry
-   - Auto-apply to cart
-   - Show success toast
-4. If not eligible:
-   - Show "Better luck next time" message
+1. Click "Try Your Luck" button in cart
+2. Backend checks: Are you the Nth customer?
+3. If YES (you're lucky!):
+   - Unique coupon code generated
+   - Reserved for you (10-minute expiry)
+   - Auto-applied to your cart
+   - Success notification shown
+4. If NO:
+   - "Better luck next time" message
 ```
 
-### 5. Checkout & Payment Flow
+### 5. Checkout & Payment
 
 ```
-1. User clicks "Checkout" on cart page
-2. Backend validates cart and coupon
-3. Creates Order with PENDING status
-4. Creates OrderItems (snapshot of prices)
-5. Creates Stripe Checkout Session
-6. User redirected to Stripe payment page
-7. User completes payment on Stripe
+1. Click "Checkout" on cart page
+2. Backend validates your cart and coupon
+3. Order created with PENDING status
+4. Order items saved (price snapshot)
+5. Stripe Checkout Session created
+6. You're redirected to Stripe payment page
+7. Complete payment on Stripe
 8. Stripe sends webhook to backend
-9. Backend updates order status to PAID
-10. Backend clears user's cart
-11. User redirected to success page
-12. Order appears in order history
+9. Backend updates order to PAID
+10. Your cart is cleared
+11. You're redirected to success page
+12. Order appears in your history
 ```
 
-### 6. Order History Flow
+### 6. Order History
 
 ```
-1. User navigates to Orders page
-2. View list of all past orders
+1. Navigate to Orders page
+2. See list of all your past orders
 3. Each order shows:
    - Order ID and date
    - Status (Pending, Paid, Shipped, Delivered)
-   - Total amount and items
-   - Applied discounts
-4. Click order → View detailed breakdown
+   - Total amount and item count
+   - Discounts applied
+4. Click any order → View detailed breakdown
 ```
 
 ## Project Structure
@@ -858,94 +849,6 @@ docker-compose build --no-cache
 # Restart frontend service
 docker-compose restart frontend
 ```
-
-## Security Considerations
-
-### Production Checklist
-
-- [ ] Set `DEBUG=False` in Django settings.py
-- [ ] Use strong `SECRET_KEY` in settings.py (generate with `django.core.management.utils.get_random_secret_key()`)
-- [ ] Use production Stripe keys in .env (starting with `sk_live_`)
-- [ ] Enable HTTPS for all endpoints
-- [ ] Update `ALLOWED_HOSTS` in settings.py with your domain
-- [ ] Use PostgreSQL instead of SQLite (update DATABASE settings in settings.py)
-- [ ] Update CORS origins in settings.py (remove localhost, add production domain)
-- [ ] Enable rate limiting for API endpoints
-- [ ] Set up proper logging and monitoring
-- [ ] Never commit `.env` file (already in .gitignore)
-- [ ] Set up Stripe webhook endpoint in production with proper URL
-- [ ] Configure CSP headers
-- [ ] Enable database backups
-
-### Environment Security
-
-```bash
-# Add to .gitignore (should already be there)
-echo ".env" >> .gitignore
-echo "*.pyc" >> .gitignore
-echo "__pycache__/" >> .gitignore
-echo "db.sqlite3" >> .gitignore
-echo "node_modules/" >> .gitignore
-echo ".next/" >> .gitignore
-
-# Never commit secrets
-git rm --cached server/.env  # If accidentally committed
-```
-
-### JWT Token Security
-
-- Access tokens expire after 50 minutes
-- Refresh tokens expire after 1 day
-- Tokens stored in localStorage (consider httpOnly cookies for production)
-- Automatic token refresh on 401 errors
-
-## Contributing
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (if available)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Code Style
-
-- **Backend**: Follow PEP 8 guidelines
-- **Frontend**: Use ESLint configuration
-- **Commits**: Use conventional commit messages
-
-### Testing
-
-```bash
-# Backend tests (when implemented)
-python manage.py test
-
-# Frontend tests (when implemented)
-npm run test
-```
-
----
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For issues, questions, or contributions:
-
-- Open an issue on GitHub
-- Check existing issues before creating new ones
-- Provide detailed reproduction steps for bugs
-
-## Acknowledgments
-
-- Product data sourced from [Makeup API](http://makeup-api.herokuapp.com/)
-- Icons by [Lucide React](https://lucide.dev/)
-- Payment processing by [Stripe](https://stripe.com/)
 
 ---
 
