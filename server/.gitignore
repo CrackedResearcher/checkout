@@ -8,11 +8,6 @@ __pycache__/
 *.py[cod]
 *.pyc
 
-# Env files
-*.env
-.env
-
-
 # Django
 db.sqlite3-journal
 *.log
