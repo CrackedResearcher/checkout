@@ -7,8 +7,4 @@ body {
   transition-duration: 300ms;
 }
 
-/* This manually applies the dark styles when the "dark" class is present */
-:is(.dark body) {
-  background-color: #09090b; /* zinc-950 */
-  color: #ffffff;
-}
+@custom-variant dark (&:where(.dark, .dark *));

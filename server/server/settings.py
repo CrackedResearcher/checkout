@@ -31,14 +31,14 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost', 
     '127.0.0.1', 
-    'scuba-designs-endless-adjustable.trycloudflare.com'
+    'arm-advisory-jerry-geneva.trycloudflare.com'
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:9000",
     "http://localhost:3000",
-    "https://scuba-designs-endless-adjustable.trycloudflare.com",
+    "https://arm-advisory-jerry-geneva.trycloudflare.com",
 ]
 
 CORS_ALLOW_HEADERS = (
@@ -46,7 +46,7 @@ CORS_ALLOW_HEADERS = (
 )
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000",
-    "https://scuba-designs-endless-adjustable.trycloudflare.com"
+    "https://arm-advisory-jerry-geneva.trycloudflare.com"
 ]
 
 # Application definition

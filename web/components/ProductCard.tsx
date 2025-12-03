@@ -9,12 +9,12 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group relative flex flex-col gap-3">
       {/* Image Container */}
-      <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-transparent dark:border-zinc-800">
+      <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-zinc-200 dark:bg-zinc-900 relative border border-transparent dark:border-zinc-800">
         {product.thumbnail_url ? (
           <img
             src={product.thumbnail_url}
             alt={product.name}
-            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-103"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-zinc-300 dark:text-zinc-700 font-medium">

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ShoppingBag, LogOut, Sun, Moon } from "lucide-react";
+import { ShoppingBag, LogOut, Sun, Moon, Package, ShoppingCartIcon } from "lucide-react";
 import { useAuth } from "@/providers/Providers";
 import { useCart } from "@/hooks/useStore";
 import { useTheme } from "next-themes";
@@ -50,8 +50,14 @@ export default function Navbar() {
             )}
           </button>
 
+          {user && (
+            <Link href="/orders" className="group" title="My Orders">
+              <ShoppingCartIcon className="w-5 h-5 text-zinc-700 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white transition" />
+            </Link>
+          )}
+
           <Link href="/cart" className="relative group">
-            <ShoppingBag className="w-6 h-6 text-zinc-700 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white transition" />
+            <ShoppingBag className="w-5 h-5 text-zinc-700 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white transition" />
             {cartCount > 0 && (
               <span className="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full ring-2 ring-white dark:ring-zinc-950">
                 {cartCount}

@@ -21,7 +21,7 @@ export default function LoginPage() {
     
     try {
       const { data } = await api.post('/auth/login/', { email, password });
-      login(data.tokens.access, { email: data.email, id: data.user_id });
+      login(data.tokens.access, data.tokens.refresh, { email: data.email, id: data.user_id });
       toast.success(data.message);
       router.push('/');
     } catch (err: any) {

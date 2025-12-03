@@ -78,7 +78,7 @@ export default function Home() {
               New Arrivals<span className="text-indigo-600">.</span>
             </h1>
             <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-lg leading-relaxed">
-              Curated essentials for the modern developer.
+            Find the pieces you'll love - crafted with care, made to last.
             </p>
           </div>
         </div>
