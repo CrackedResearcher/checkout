@@ -2,6 +2,8 @@
 
 A modern, full-stack e-commerce application for cosmetic products featuring Stripe payment integration, intelligent coupon system, and a beautiful, responsive user interface.
 
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 29 10 AM" src="https://github.com/user-attachments/assets/063318b9-e089-4da2-955b-b7529013c73c" />
+
 ## ⚡ Quick Run
 
 ```bash
@@ -168,6 +170,16 @@ This is a production-ready e-commerce platform built with Django REST Framework 
 6. **Payment**: Redirect to Stripe → Complete payment
 7. **Confirmation**: Stripe webhook → Update order status → Clear cart
 8. **View Orders**: GET /orders → User's order history
+
+Image Reference
+
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 28 49 AM" src="https://github.com/user-attachments/assets/e14bd931-05f9-4372-b171-445c051cb0ee" />
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 29 10 AM" src="https://github.com/user-attachments/assets/aa1f2271-35d2-47e1-a205-4894f88a2677" />
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 29 31 AM" src="https://github.com/user-attachments/assets/8ebd9625-7747-471f-9426-91f3a713c5a3" />
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 29 51 AM" src="https://github.com/user-attachments/assets/075d2f5a-1097-40f5-8ce1-ec2f331a266b" />
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 30 51 AM" src="https://github.com/user-attachments/assets/0893ac7f-f6b2-449a-b103-79c9406bb1fe" />
+<img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 30 45 AM" src="https://github.com/user-attachments/assets/815952dc-4c3f-4659-a3ed-395e3354dc4a" />
+
 
 ## Prerequisites
 
