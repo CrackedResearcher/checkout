@@ -16,6 +16,7 @@ import {
   Tag,
   ShoppingBag,
   X,
+  InfoIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -29,28 +30,36 @@ export default function CartPage() {
 
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponAwarded, setCouponAwarded] = useState(false);
 
-  // --- Calculations ---
   const subtotal =
     cartItems?.reduce((acc, item) => acc + (item.subtotal || 0), 0) || 0;
 
   const discountAmount = appliedCoupon ? subtotal * 0.1 : 0;
   const total = subtotal - discountAmount;
 
-  // --- Handlers ---
   const handleTryLuck = () => {
     generateCoupon.mutate(undefined, {
       onSuccess: (data) => {
         if (data.coupon_code) {
           setAppliedCoupon(data.coupon_code);
           setCouponInput(data.coupon_code);
-          toast.success("Nth Customer Bonus!", {
-            description: "10% Discount code applied automatically.",
+          setCouponAwarded(true);
+          toast.success("You got a reward!", {
+            description: (
+              <div className="mt-2 flex flex-col gap-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {data.message} You get ({data.discounted_percentage}) and your coupon has been applied already! 
+                </p>
+              </div>
+            ),
             icon: <Sparkles className="w-4 h-4 text-indigo-500" />,
           });
         } else {
-          toast.message("Not this time...", {
-            description: "Keep shopping to increase the global counter!",
+          toast.message("Not this time…", {
+            description:
+              "Keep shopping to increase your chances of winning a coupon!",
+            icon: <InfoIcon className="w-4 h-4 text-indigo-500" />,
           });
         }
       },
@@ -128,7 +137,6 @@ export default function CartPage() {
           </div>
         ) : (
           <div className="lg:grid lg:grid-cols-12 lg:gap-x-10 lg:items-start">
-            {/* --- LEFT COLUMN: Compact Cart Items --- */}
             <section className="lg:col-span-8">
               <ul className="space-y-3">
                 {cartItems.map((item) => (
@@ -136,7 +144,6 @@ export default function CartPage() {
                     key={item.id}
                     className="group flex gap-4 p-4 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all hover:border-zinc-300 dark:hover:border-zinc-700 cursor-default"
                   >
-                    {/* Compact Image */}
                     <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                       {item.product.thumbnail_url ? (
                         <img
@@ -210,7 +217,6 @@ export default function CartPage() {
                           </button>
                         </div>
 
-                        {/* Desktop Remove */}
                         <button
                           onClick={() => removeFromCart.mutate(item.id)}
                           className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-red-600 transition-colors cursor-pointer group/trash"
@@ -225,7 +231,6 @@ export default function CartPage() {
               </ul>
             </section>
 
-            {/* --- RIGHT COLUMN: Checkout Card (Matches Success Page) --- */}
             <section className="mt-10 lg:mt-0 lg:col-span-4">
               <div className="sticky top-28">
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
@@ -233,17 +238,16 @@ export default function CartPage() {
                     Summary
                   </h2>
 
-                  {/* Minimalist Lucky Section */}
                   <div className="group relative overflow-hidden rounded-xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10 p-4 mb-6 transition-all hover:border-indigo-200">
                     <div className="flex items-center gap-2 mb-2 text-indigo-900 dark:text-indigo-300">
                       <Sparkles className="w-3.5 h-3.5" />
                       <h3 className="font-bold text-xs uppercase tracking-wide">
-                        Nth Customer Bonus
+                        Heads Up!
                       </h3>
                     </div>
                     <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mb-3 leading-relaxed">
-                      Roll the dice. If you are the Nth customer, you get 10%
-                      off.
+                      Try your luck for a chance to win a coupon code. Roll the
+                      dice and see if you unlock a reward.
                     </p>
                     <button
                       onClick={handleTryLuck}
@@ -259,7 +263,6 @@ export default function CartPage() {
                     </button>
                   </div>
 
-                  {/* Calculations */}
                   <div className="space-y-3 py-6 border-t border-zinc-100 dark:border-zinc-800">
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-500 dark:text-zinc-400">
@@ -296,24 +299,26 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  {/* Manual Coupon Input (Collapsed style) */}
-                  <div className="flex gap-2 mb-6">
-                    <input
-                      type="text"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value)}
-                      className="flex-1 px-3 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-zinc-400"
-                      placeholder="PROMO CODE"
-                    />
-                    <button
-                      onClick={handleApplyCouponManual}
-                      className="px-4 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-900 dark:text-white rounded-lg font-bold text-xs transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                      APPLY
-                    </button>
-                  </div>
+                  {couponAwarded && (
+                    <div className="flex gap-2 mb-6">
+                      <input
+                        type="text"
+                        disabled
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value)}
+                        className="flex-1 px-3 py-2.5 bg-zinc-50 dark:text-gray-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-zinc-400"
+                        placeholder="PROMO CODE"
+                      />
+                      <button
+                        disabled
+                        className="px-4 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg font-bold text-xs transition-all
+             disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none disabled:hover:border-zinc-200 disabled:dark:hover:border-zinc-700"
+                      >
+                        APPLIED
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Checkout Button */}
                   <button
                     onClick={handleCheckout}
                     disabled={checkout.isPending}

@@ -1,3 +1,4 @@
+from venv import logger
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -6,7 +7,8 @@ from coupons.models import Coupon
 from store.models import StoreSettings
 from django.db import transaction
 import uuid
-from datetime import timedelta, timezone
+from django.utils import timezone 
+from datetime import timedelta
 from store.models import GlobalOrderCounter
 
 
@@ -43,11 +45,14 @@ class GenerateCouponView(APIView):
                         expires_at=timezone.now() + timedelta(minutes=10)
                     )
                     return Response({
-                        "message": "Congratulations! You are the Nth customer.",
-                        "coupon_code": coupon.code
+                        "message": f"Congratulations! You are the {N}th customer.",
+                        "coupon_code": coupon.code,
+                        "discounted_percentage": str(coupon.discount_percentage) + "% off"
                     }, status=201)
                 except Exception as e:
                     # Slot was taken in the split second
-                    return Response({"message": "Better luck next time!"}, status=200)
+                    logger.info(f"error occured during coupon generation - {str(e)}")
+                    transaction.set_rollback(True) 
+                    return Response({"Better luck next time!"}, status=200)
             
             return Response({"message": "Better luck next time!"}, status=200)

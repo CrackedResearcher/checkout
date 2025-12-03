@@ -33,6 +33,7 @@ export interface User {
   }
   
   export interface CouponResponse {
+    discounted_percentage: string;
     message: string;
     coupon_code?: string;
   }

@@ -8,6 +8,8 @@ class Coupon(BaseModel):
     code = models.CharField(max_length=15, unique=True)
     discount_percentage = models.PositiveIntegerField(default=10)
 
+    stripe_coupon_id = models.CharField(max_length=255, blank=True, null=True)
+
     is_used = models.BooleanField(default=False) 
     is_active = models.BooleanField(default=True)
     

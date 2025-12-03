@@ -16,7 +16,9 @@ from django.db import transaction
 from decimal import Decimal
 from store.models import GlobalOrderCounter
 import stripe
+import logging
 
+logger = logging.getLogger(__name__)
 
 class CartView(APIView):
     permission_classes = [IsAuthenticated]
@@ -205,9 +207,22 @@ class CheckoutView(APIView):
             ]
             OrderItem.objects.bulk_create(order_items)
 
+            stripe_discounts = []
             if coupon_obj:
-                coupon_obj.is_used = True
-                coupon_obj.save()
+                if coupon_obj.stripe_coupon_id:
+                    stripe_discounts = [{'coupon': coupon_obj.stripe_coupon_id}]
+                else:
+                    try:
+                        s_coupon = stripe.Coupon.create(
+                        percent_off=coupon_obj.discount_percentage,
+                        duration="once"
+                    )
+                        coupon_obj.stripe_coupon_id = s_coupon.id 
+                        coupon_obj.save(update_fields=['stripe_coupon_id'])
+                    except Exception as e:
+                        logger.error(f"Error creating Stripe coupon: {e}")
+                        return Response({"error": "Payment provider error"}, status=500)
+
 
             line_items = []
             for item in items:
@@ -219,10 +234,15 @@ class CheckoutView(APIView):
                     },
                     'quantity': item.quantity,
                 })
+            
+            if coupon_obj:
+                coupon_obj.is_used = True
+                coupon_obj.save()
 
             checkout_session = stripe.checkout.Session.create(
                 line_items=line_items,
                 mode="payment",
+                discounts=stripe_discounts, 
                 customer_email=user.email,
                 success_url=f"http://localhost:3000/payment-success?order_id={order.id}",
                 cancel_url=f"http://localhost:3000/payment-failed?order_id={order.id}",

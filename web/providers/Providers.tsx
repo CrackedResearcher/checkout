@@ -24,6 +24,7 @@ const queryClient = new QueryClient();
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ email: string; id: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -49,6 +50,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -56,32 +58,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           {children}
           <Toaster
             position="top-center"
+            theme="dark"
             className="toaster group"
             toastOptions={{
               classNames: {
-                toast:
-                  "group toast group-[.toaster]:bg-white group-[.toaster]:dark:bg-zinc-950 " +
-                  "group-[.toaster]:border group-[.toaster]:border-zinc-200 group-[.toaster]:dark:border-zinc-800 " +
-                  "group-[.toaster]:shadow-lg group-[.toaster]:rounded-xl " +
-                  "group-[.toast]:text-zinc-950 group-[.toast]:dark:text-zinc-50",
-                
-                description:
-                  "group-[.toast]:text-zinc-500 group-[.toast]:dark:text-zinc-400",
-                
-                actionButton:
-                  "group-[.toast]:bg-zinc-900 group-[.toast]:dark:bg-zinc-50 group-[.toast]:text-white group-[.toast]:dark:text-zinc-900",
-                
-                cancelButton:
-                  "group-[.toast]:bg-zinc-100 group-[.toast]:dark:bg-zinc-800 group-[.toast]:text-zinc-500 group-[.toast]:dark:text-zinc-400",
-                
-                error:
-                  "group-[.toaster]:text-red-600 dark:group-[.toaster]:text-red-500",
-                success:
-                  "group-[.toaster]:text-indigo-600 dark:group-[.toaster]:text-indigo-400",
-                warning:
-                  "group-[.toaster]:text-amber-600 dark:group-[.toaster]:text-amber-400",
-                info: 
-                  "group-[.toaster]:text-blue-600 dark:group-[.toaster]:text-blue-400",
+                toast: 'group toast group-[.toaster]:bg-white group-[.toaster]:dark:bg-zinc-950 group-[.toaster]:border-zinc-200 group-[.toaster]:dark:border-zinc-800 group-[.toaster]:shadow-lg group-[.toaster]:rounded-xl',
+                description: 'group-[.toast]:text-zinc-500 group-[.toast]:dark:text-zinc-400',
+                actionButton: 'group-[.toast]:bg-zinc-900 group-[.toast]:dark:bg-zinc-50 group-[.toast]:text-white group-[.toast]:dark:text-zinc-900',
+                cancelButton: 'group-[.toast]:bg-zinc-100 group-[.toast]:dark:bg-zinc-800 group-[.toast]:text-zinc-500 group-[.toast]:dark:text-zinc-400',
+                error: 'group-[.toaster]:text-red-600 dark:group-[.toaster]:text-red-400',
+                success: 'group-[.toaster]:text-indigo-600 dark:group-[.toaster]:text-indigo-400',
+                warning: 'group-[.toaster]:text-amber-600 dark:group-[.toaster]:text-amber-400',
+                info: 'group-[.toaster]:text-blue-600 dark:group-[.toaster]:text-blue-400',
               },
             }}
           />
