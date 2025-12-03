@@ -1,0 +1,111 @@
+version: '3.9'
+
+services:
+  # Django Backend Service
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ecommerce-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount code for development (comment out for production)
+      - ./server:/app
+      # Persistent database volume
+      - backend-data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEBUG=True
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
+    env_file:
+      - ./server/.env
+    depends_on:
+      - db
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/v1/products/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Next.js Frontend Service
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: ecommerce-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount code for development hot-reload
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - WATCHPACK_POLLING=true
+    env_file:
+      - ./web/.env.local
+    depends_on:
+      - backend
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # PostgreSQL Database (Optional - for production)
+  # Uncomment to use PostgreSQL instead of SQLite
+  db:
+    image: postgres:16-alpine
+    container_name: ecommerce-db
+    environment:
+      - POSTGRES_DB=ecommerce
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Stripe CLI for webhook forwarding (Development only)
+  # Uncomment for local webhook testing
+  # stripe-cli:
+  #   image: stripe/stripe-cli:latest
+  #   container_name: ecommerce-stripe
+  #   command: listen --forward-to http://backend:8000/api/v1/stripe/webhook --skip-verify
+  #   environment:
+  #     - STRIPE_API_KEY=${STRIPE_API_KEY}
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - ecommerce-network
+  #   restart: unless-stopped
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local
+  postgres-data:
+    driver: local
