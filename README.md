@@ -4,7 +4,7 @@ A modern, full stack e-commerce store featuring a variety of luxurious products.
 
 <img width="1436" height="758" alt="Screenshot 2025-12-04 at 1 29 10 AM" src="https://github.com/user-attachments/assets/063318b9-e089-4da2-955b-b7529013c73c" />
 
-## ⚡ Quick Run
+## Quick Run
 
 ```bash
 git clone <repository-url>
@@ -198,7 +198,7 @@ Image Reference
 
 ## Quick Start
 
-### 🚀 Fastest Way: Docker (Recommended)
+### Fastest Way: Docker (Recommended)
 
 ```bash
 git clone <repository-url>
