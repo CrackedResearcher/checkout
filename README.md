@@ -14,6 +14,12 @@ docker-compose up --build
 
 Open **http://localhost:3000** to explore the store! The database comes pre-populated with a variety of luxurious products ready to browse.
 
+Demo
+
+
+https://github.com/user-attachments/assets/1dd1f4e0-9548-411d-9149-955c129275f7
+
+
 ## Table of Contents
 
 - [Overview](#overview)
